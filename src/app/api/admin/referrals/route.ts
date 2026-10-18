@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { logAuditAction } from '@/lib/audit';
+import { transitionReferralStage, type DealStage } from '@/lib/partnership';
 
 
 export async function GET(request: NextRequest) {
@@ -32,6 +34,12 @@ export async function GET(request: NextRequest) {
           include: {
             user: true
           }
+        },
+        partnerCompany: {
+          select: { id: true, name: true }
+        },
+        stageHistory: {
+          orderBy: { createdAt: 'asc' }
         }
       },
       orderBy: {
@@ -52,7 +60,9 @@ export async function GET(request: NextRequest) {
         const affiliate = referral.affiliate as any;
         const pgId = affiliate.partnerGroupId;
         const pgData = pgId ? partnerGroupMap.get(pgId) : null;
-        
+        const rAny = referral as any;
+        const history = Array.isArray(rAny.stageHistory) ? rAny.stageHistory : [];
+
         return {
           id: referral.id,
           leadEmail: referral.leadEmail,
@@ -63,6 +73,14 @@ export async function GET(request: NextRequest) {
           createdAt: referral.createdAt,
           estimatedValue: Number(metadata?.estimated_value) || 0,
           company: metadata?.company || '',
+          partnerCompany: rAny.partnerCompany || null,
+          stageHistory: history.map((h: any) => ({
+            fromStage: h.fromStage,
+            toStage: h.toStage,
+            actorId: h.actorId,
+            note: h.note,
+            createdAt: h.createdAt,
+          })),
           affiliate: {
             id: affiliate.id,
             name: affiliate.user.name,
@@ -125,23 +143,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update multiple referrals
-    const updatedReferrals = await prisma.referral.updateMany({
-      where: {
-        id: { in: referralIds },
-        status: 'PENDING'
-      },
-      data: {
-        status: action === 'approve' ? 'APPROVED' : 'REJECTED',
-        reviewedBy: user.id,
-        reviewedAt: new Date()
+    // B2B pipeline: approve/reject are stage transitions with validation,
+    // per-lead history, and audit logging (no bulk updateMany — each lead's
+    // transition is validated and recorded individually).
+    const toStage: DealStage = action === 'approve' ? 'ACKNOWLEDGED' : 'LOST';
+    let updatedCount = 0;
+    const skipped: string[] = [];
+
+    for (const referralId of referralIds) {
+      try {
+        await transitionReferralStage({
+          referralId,
+          toStage,
+          actorId: user.id,
+          note: action === 'approve' ? 'Approved by admin' : 'Rejected by admin',
+        });
+        updatedCount++;
+      } catch (err: any) {
+        // Invalid transition (e.g. already terminal) or missing lead.
+        skipped.push(referralId);
       }
+    }
+
+    await logAuditAction({
+      actorId: user.id,
+      action: action === 'approve' ? 'referral.batch_approved' : 'referral.batch_rejected',
+      objectType: 'Referral',
+      objectId: 'batch',
+      payload: { toStage, requested: referralIds.length, updated: updatedCount, skipped },
     });
 
     return NextResponse.json({
       success: true,
-      message: `${updatedReferrals.count} referrals ${action}d successfully`,
-      updatedCount: updatedReferrals.count
+      message: `${updatedCount} referrals moved to ${toStage}${skipped.length ? ` (${skipped.length} skipped: invalid transition)` : ''}`,
+      updatedCount,
+      skipped,
     });
 
   } catch (error) {

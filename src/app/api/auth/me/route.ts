@@ -11,7 +11,8 @@ export async function GET(request: NextRequest) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
-        affiliate: true
+        affiliate: true,
+        partnerCompany: true,
       }
     });
 
@@ -29,6 +30,11 @@ export async function GET(request: NextRequest) {
         name: user.name,
         role: user.role,
         hasAffiliate: !!user.affiliate,
+        // B2B: partner-company users get their company context for scoping.
+        hasCompany: !!user.partnerCompany,
+        company: user.partnerCompany
+          ? { id: user.partnerCompany.id, name: user.partnerCompany.name }
+          : null,
         profilePicture: user.profilePicture,
       }
     });

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { logAuditAction } from '@/lib/audit';
 
 
 export async function GET(request: NextRequest) {
@@ -128,6 +129,15 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    // Trust-relevant: commission rates drive accrual — audit the change.
+    await logAuditAction({
+      actorId: user.id,
+      action: 'partner_group.created',
+      objectType: 'PartnerGroup',
+      objectId: partnerGroup.id,
+      payload: { name, commissionRate },
+    });
+
     return NextResponse.json({
       success: true,
       message: 'Partner group created successfully',
@@ -195,6 +205,9 @@ export async function PUT(request: NextRequest) {
       });
     }
 
+    // Fetch before-image for the audit trail (commission rates are trust-critical).
+    const before = await prisma.partnerGroup.findUnique({ where: { id } });
+
     // Update partner group
     const partnerGroup = await prisma.partnerGroup.update({
       where: { id },
@@ -205,6 +218,17 @@ export async function PUT(request: NextRequest) {
         ...(signupUrl !== undefined && { signupUrl }),
         ...(isDefault !== undefined && { isDefault })
       }
+    });
+
+    await logAuditAction({
+      actorId: user.id,
+      action: 'partner_group.updated',
+      objectType: 'PartnerGroup',
+      objectId: partnerGroup.id,
+      payload: {
+        before: before ? { name: before.name, commissionRate: before.commissionRate } : null,
+        after: { name: partnerGroup.name, commissionRate: partnerGroup.commissionRate },
+      },
     });
 
     return NextResponse.json({

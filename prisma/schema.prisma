@@ -19,11 +19,38 @@ model User {
   updatedAt      DateTime     @updatedAt @map("updated_at")
   profilePicture String?      @map("profile_picture")
   affiliate      Affiliate?
+  // B2B: partner-company users belong to exactly one company and can only
+  // ever see that company's data (enforced in API routes + middleware).
+  partnerCompanyId String?         @map("partner_company_id")
+  partnerCompany   PartnerCompany? @relation(fields: [partnerCompanyId], references: [id], onDelete: Restrict)
   auditLogs      AuditLog[]
   commissions    Commission[]
   payouts        Payout[]
 
   @@map("users")
+}
+
+// ───────────────────────────────────────────────
+// B2B Partnership Portal
+// A PartnerCompany is the client company that RECEIVES referred leads
+// (e.g. a dev agency). The AFFILIATE side is the referrer (us).
+// ───────────────────────────────────────────────
+
+model PartnerCompany {
+  id             String    @id @default(cuid())
+  name           String
+  contactName    String?   @map("contact_name")
+  contactEmail   String?   @map("contact_email")
+  // Contracted commission rate as a FRACTION (0.30 = 30%). Used when accruing
+  // commission on collected revenue; falls back to partner-group/default rate.
+  commissionRate Float     @default(0.30) @map("commission_rate")
+  status         String    @default("ACTIVE") // ACTIVE | SUSPENDED
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  users          User[]
+  referrals      Referral[]
+
+  @@map("partner_companies")
 }
 
 model Affiliate {
@@ -53,7 +80,7 @@ model Referral {
   leadEmail      String          @map("lead_email")
   leadPhone      String?         @map("lead_phone")
   subscriptionId String?         @map("subscription_id")
-  status         ReferralStatus  @default(PENDING)
+  status         ReferralStatus  @default(REGISTERED)
   notes          String?
   metadata       Json            @default("{}")
   reviewedBy     String?         @map("reviewed_by")
@@ -64,9 +91,41 @@ model Referral {
   conversions    Conversion[]
   clicks         ReferralClick[]
   transactions   Transaction[]
-  affiliate      Affiliate       @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  // B2B immutability: a referral (lead) must NEVER be deleted — it is the
+  // timestamped proof of attribution. Restrict blocks affiliate deletes while
+  // leads exist instead of cascading them away.
+  affiliate      Affiliate       @relation(fields: [affiliateId], references: [id], onDelete: Restrict)
+  // B2B: the partner company this lead was registered FOR. Nullable for
+  // migration safety with legacy rows; REQUIRED in the B2B registration API.
+  partnerCompanyId String?         @map("partner_company_id")
+  partnerCompany   PartnerCompany? @relation(fields: [partnerCompanyId], references: [id], onDelete: Restrict)
+  // B2B: append-only pipeline history (see ReferralStageHistory).
+  stageHistory   ReferralStageHistory[]
+  // B2B dedupe: the same lead email cannot be registered twice for the same
+  // partner company (no double-registration). Postgres treats NULLs as
+  // distinct, so legacy rows without a company are unaffected.
+  @@unique([partnerCompanyId, leadEmail])
 
   @@map("referrals")
+}
+
+// ───────────────────────────────────────────────
+// B2B: tamper-evident stage history for the deal pipeline.
+// Every transition is recorded with timestamp + actor; rows are append-only.
+// ───────────────────────────────────────────────
+
+model ReferralStageHistory {
+  id         String          @id @default(cuid())
+  referralId String          @map("referral_id")
+  fromStage  ReferralStatus? @map("from_stage") // null = initial registration
+  toStage    ReferralStatus  @map("to_stage")
+  actorId    String          @map("actor_id")
+  note       String?
+  createdAt  DateTime        @default(now()) @map("created_at")
+  referral   Referral        @relation(fields: [referralId], references: [id], onDelete: Restrict)
+
+  @@index([referralId])
+  @@map("referral_stage_history")
 }
 
 model ReferralClick {
@@ -77,7 +136,7 @@ model ReferralClick {
   referer    String?
   metadata   Json     @default("{}")
   createdAt  DateTime @default(now()) @map("created_at")
-  referral   Referral @relation(fields: [referralId], references: [id], onDelete: Cascade)
+  referral   Referral @relation(fields: [referralId], references: [id], onDelete: Restrict)
 
   @@map("referral_clicks")
 }
@@ -95,7 +154,8 @@ model Conversion {
   updatedAt     DateTime         @updatedAt @map("updated_at")
   commissions   Commission[]
   affiliate     Affiliate        @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
-  referral      Referral?        @relation(fields: [referralId], references: [id])
+  // B2B immutability: Restrict so conversion rows can never pull a lead away.
+  referral      Referral?        @relation(fields: [referralId], references: [id], onDelete: Restrict)
 
   @@map("conversions")
 }
@@ -252,12 +312,16 @@ model Transaction {
   status          TransactionStatus @default(PENDING)
   description     String?
   invoiceId       String?           @map("invoice_id")
+  // B2B invoiced-vs-collected aging: invoiceDate marks when the client was
+  // billed; paidAt is set ONLY when money actually clears (via the collect
+  // endpoint) — never defaulted at creation.
+  invoiceDate     DateTime?         @map("invoice_date")
   paymentMethod   String?           @map("payment_method")
   paidAt          DateTime?         @map("paid_at")
   createdBy       String            @map("created_by")
   createdAt       DateTime          @default(now()) @map("created_at")
   updatedAt       DateTime          @updatedAt @map("updated_at")
-  referral        Referral          @relation(fields: [referralId], references: [id], onDelete: Cascade)
+  referral        Referral          @relation(fields: [referralId], references: [id], onDelete: Restrict)
   affiliate       Affiliate         @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
 
   @@map("transactions")
@@ -360,6 +424,9 @@ enum WebhookStatus {
 enum Role {
   ADMIN
   AFFILIATE
+  // B2B partnership portal: the client company that receives referred leads.
+  // NOTE: AFFILIATE is the referrer side (us). Do not repurpose it.
+  PARTNER_COMPANY
 }
 
 enum UserStatus {
@@ -370,9 +437,12 @@ enum UserStatus {
 }
 
 enum ReferralStatus {
-  PENDING
-  APPROVED
-  REJECTED
+  REGISTERED // lead registered, awaiting partner acknowledgment
+  ACKNOWLEDGED // partner confirmed the lead in writing
+  INTRO_DONE // introduction to the client made
+  NEGOTIATING // commercial discussion in progress
+  WON // deal closed
+  LOST // lead rejected or deal lost (terminal)
 }
 
 enum ConversionType {
@@ -418,8 +488,9 @@ enum CommissionRuleType {
 }
 
 enum TransactionStatus {
-  PENDING
-  COMPLETED
+  PENDING // recorded, not yet invoiced
+  INVOICED // invoice sent, money not yet cleared
+  COMPLETED // money cleared (paidAt set) — commission accrues here ONLY
   REFUNDED
   FAILED
 }

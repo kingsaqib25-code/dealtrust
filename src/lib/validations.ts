@@ -7,6 +7,9 @@ export const referralSchema = z.object({
     company: z.string().optional(),
     notes: z.string().optional(),
     estimatedValue: z.number().min(0).max(999999999).optional(),
+    // B2B: the partner company this lead is registered FOR. Required by the
+    // B2B registration API; every lead belongs to exactly one company.
+    partnerCompanyId: z.string().min(1, 'Partner company is required').optional(),
 });
 
 // Affiliate Creation Validation (Admin)

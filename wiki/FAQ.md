@@ -1,6 +1,6 @@
 # FAQ (Frequently Asked Questions)
 
-Find quick answers to common questions about Refferq.
+Find quick answers to common questions about DealTrust.
 
 ---
 
@@ -20,11 +20,11 @@ Find quick answers to common questions about Refferq.
 
 ## General Questions
 
-### What is Refferq?
+### What is DealTrust?
 
-Refferq is a comprehensive, open-source affiliate management platform built with Next.js, TypeScript, and PostgreSQL. It provides everything you need to create, manage, and scale your affiliate marketing program.
+DealTrust is a comprehensive, open-source affiliate management platform built with Next.js, TypeScript, and PostgreSQL. It provides everything you need to create, manage, and scale your affiliate marketing program.
 
-### Who is Refferq for?
+### Who is DealTrust for?
 
 - **SaaS Companies** - Grow through affiliate partnerships
 - **E-commerce Stores** - Reward customer referrals
@@ -33,15 +33,15 @@ Refferq is a comprehensive, open-source affiliate management platform built with
 - **Marketplaces** - Multi-vendor platforms
 - **Membership Sites** - Recurring revenue businesses
 
-### Is Refferq really free?
+### Is DealTrust really free?
 
-Yes! Refferq is 100% free and open-source under the MIT License. You can use it commercially without any licensing fees. However, you'll need to pay for:
+Yes! DealTrust is 100% free and open-source under the MIT License. You can use it commercially without any licensing fees. However, you'll need to pay for:
 - Server hosting (Vercel free tier available)
 - Database hosting (many free options)
 - Email service (Resend: 3,000 free emails/month)
 - Optional payment processing (Stripe fees)
 
-### How is Refferq different from other affiliate platforms?
+### How is DealTrust different from other affiliate platforms?
 
 - ✅ **Open Source** - Full source code access, no vendor lock-in
 - ✅ **Self-Hosted** - You control your data and infrastructure
@@ -70,25 +70,25 @@ Yes! Refferq is 100% free and open-source under the MIT License. You can use it 
 
 ### How long does installation take?
 
-Following our [Quick Start Guide](Quick-Start-Guide), you can have Refferq running in **5-10 minutes**.
+Following our [Quick Start Guide](Quick-Start-Guide), you can have DealTrust running in **5-10 minutes**.
 
-### Do I need coding knowledge to use Refferq?
+### Do I need coding knowledge to use DealTrust?
 
 **Basic Usage:** No coding required for day-to-day operations
 **Installation:** Basic command line knowledge helpful
 **Customization:** JavaScript/TypeScript knowledge required for modifications
 
-### Can I install Refferq on shared hosting?
+### Can I install DealTrust on shared hosting?
 
-Refferq requires Node.js and PostgreSQL, which most shared hosting doesn't support. We recommend:
+DealTrust requires Node.js and PostgreSQL, which most shared hosting doesn't support. We recommend:
 - **Vercel** (easiest, free tier available)
 - **DigitalOcean** (affordable, $5/month)
 - **AWS** (scalable, pay-as-you-go)
 - **Docker** (self-hosted)
 
-### What database does Refferq use?
+### What database does DealTrust use?
 
-Refferq uses **PostgreSQL** via Prisma ORM. Support for MySQL/MariaDB is planned for future releases.
+DealTrust uses **PostgreSQL** via Prisma ORM. Support for MySQL/MariaDB is planned for future releases.
 
 ---
 
@@ -96,7 +96,7 @@ Refferq uses **PostgreSQL** via Prisma ORM. Support for MySQL/MariaDB is planned
 
 ### How does referral tracking work?
 
-Refferq tracks referrals in two ways:
+DealTrust tracks referrals in two ways:
 
 1. **Manual Submission** - Affiliates submit leads through the portal
 2. **Automatic Tracking** - Using unique referral links with codes (coming in v1.1)
@@ -154,7 +154,7 @@ Currently, email notifications are sent for key events. Email preference managem
 
 ## Technical Questions
 
-### What technologies does Refferq use?
+### What technologies does DealTrust use?
 
 **Frontend:**
 - Next.js 15 (React 19)
@@ -171,7 +171,7 @@ Currently, email notifications are sent for key events. Email preference managem
 - Resend (email)
 - Stripe (optional payments)
 
-### Is Refferq production-ready?
+### Is DealTrust production-ready?
 
 Yes! Version 1.0.0 is stable and production-ready. We recommend:
 - Proper environment configuration
@@ -179,30 +179,30 @@ Yes! Version 1.0.0 is stable and production-ready. We recommend:
 - Regular database backups
 - Monitoring and logging
 
-### How scalable is Refferq?
+### How scalable is DealTrust?
 
-Refferq can scale to:
+DealTrust can scale to:
 - **100+ affiliates** - Single server
 - **1,000+ affiliates** - Optimized configuration
 - **10,000+ affiliates** - Load balancing (planned v1.5.0)
 
 Performance depends on your infrastructure and optimization.
 
-### Can I use Refferq with my existing application?
+### Can I use DealTrust with my existing application?
 
-Yes! Refferq provides a REST API that you can integrate with any application. Use webhooks (coming v1.1.0) for real-time updates.
+Yes! DealTrust provides a REST API that you can integrate with any application. Use webhooks (coming v1.1.0) for real-time updates.
 
-### Does Refferq have an API?
+### Does DealTrust have an API?
 
-Yes! Refferq has a comprehensive REST API with 31 endpoints. See our [API Overview](API-Overview) for details.
+Yes! DealTrust has a comprehensive REST API with 31 endpoints. See our [API Overview](API-Overview) for details.
 
-### Is Refferq mobile-friendly?
+### Is DealTrust mobile-friendly?
 
-Yes, Refferq is fully responsive and works on mobile devices. Native mobile apps are planned for v1.5.0.
+Yes, DealTrust is fully responsive and works on mobile devices. Native mobile apps are planned for v1.5.0.
 
-### Can I use Refferq offline?
+### Can I use DealTrust offline?
 
-No, Refferq requires an internet connection. It's a web application that needs server communication.
+No, DealTrust requires an internet connection. It's a web application that needs server communication.
 
 ---
 
@@ -223,7 +223,7 @@ See [Email System](Email-System) for detailed troubleshooting.
 **Solutions:**
 1. Check if PostgreSQL is running: `pg_isready`
 2. Verify DATABASE_URL in .env.local
-3. Ensure database exists: `createdb refferq`
+3. Ensure database exists: `createdb dealtrust`
 4. Check network connectivity
 
 ### "Port 3000 already in use" error
@@ -262,9 +262,9 @@ npm run dev -- -p 3001
 
 ## Pricing & Licensing
 
-### Is Refferq really free forever?
+### Is DealTrust really free forever?
 
-Yes! Refferq is MIT licensed, which means:
+Yes! DealTrust is MIT licensed, which means:
 - ✅ Free to use
 - ✅ Free to modify
 - ✅ Free for commercial use
@@ -278,11 +278,11 @@ You can:
 - ✅ Modify the source code
 - ✅ Distribute your modifications
 - ✅ Use privately
-- ✅ Sell products built with Refferq
+- ✅ Sell products built with DealTrust
 
 You must:
 - ⚠️ Include the original license
-- ⚠️ Credit the Refferq Team
+- ⚠️ Credit the DealTrust Team
 
 You cannot:
 - ❌ Hold us liable
@@ -290,7 +290,7 @@ You cannot:
 
 ### Are there any transaction fees?
 
-No! Refferq doesn't charge any fees. However:
+No! DealTrust doesn't charge any fees. However:
 - Payment processors (Stripe) charge their fees
 - Email services (Resend) have usage limits
 
@@ -298,13 +298,13 @@ No! Refferq doesn't charge any fees. However:
 
 No, all updates are free forever.
 
-### Can I remove "Powered by Refferq"?
+### Can I remove "Powered by DealTrust"?
 
 Yes, the MIT License allows you to remove any branding. However, we'd appreciate attribution!
 
 ### Is there a paid version?
 
-Currently no. Refferq is 100% open source. We may offer paid support or custom development in the future.
+Currently no. DealTrust is 100% open source. We may offer paid support or custom development in the future.
 
 ---
 
@@ -327,7 +327,7 @@ Yes, you can modify the database schema and forms. Knowledge of TypeScript and P
 
 ### Can I integrate with my existing design system?
 
-Yes, Refferq uses standard React components. You can replace them with your own components.
+Yes, DealTrust uses standard React components. You can replace them with your own components.
 
 ### Can I use a different database?
 
@@ -337,7 +337,7 @@ Currently, only PostgreSQL is supported. MySQL/MariaDB support is planned for v1
 
 ## Integrations
 
-### Does Refferq integrate with Shopify?
+### Does DealTrust integrate with Shopify?
 
 Not yet. Shopify integration is planned for v1.4.0. See [Roadmap](Roadmap).
 
@@ -345,7 +345,7 @@ Not yet. Shopify integration is planned for v1.4.0. See [Roadmap](Roadmap).
 
 Yes, via API. Pre-built integrations for HubSpot, Salesforce, etc. are planned for v1.4.0.
 
-### Does Refferq work with WordPress?
+### Does DealTrust work with WordPress?
 
 Not directly, but you can embed referral links or use the API to integrate.
 
@@ -353,7 +353,7 @@ Not directly, but you can embed referral links or use the API to integrate.
 
 Zapier integration is planned for v1.4.0. Until then, use webhooks (coming v1.1.0) or the API.
 
-### Does Refferq have webhooks?
+### Does DealTrust have webhooks?
 
 Webhook support is coming in v1.1.0 (November 2025). See [Roadmap](Roadmap).
 
@@ -364,16 +364,16 @@ Webhook support is coming in v1.1.0 (November 2025). See [Roadmap](Roadmap).
 ### Where can I get help?
 
 - **[Wiki](Home)** - Documentation and guides
-- **[GitHub Issues](https://github.com/refferq/refferq/issues)** - Bug reports
-- **[GitHub Discussions](https://github.com/refferq/refferq/discussions)** - Questions and ideas
-- **Email** - hello@refferq.com
+- **[GitHub Issues](https://github.com/dealtrust/dealtrust/issues)** - Bug reports
+- **[GitHub Discussions](https://github.com/dealtrust/dealtrust/discussions)** - Questions and ideas
+- **Email** - hello@dealtrust.com
 
 ### How do I report a bug?
 
-1. Check [existing issues](https://github.com/refferq/refferq/issues)
-2. Create a [new issue](https://github.com/refferq/refferq/issues/new)
+1. Check [existing issues](https://github.com/dealtrust/dealtrust/issues)
+2. Create a [new issue](https://github.com/dealtrust/dealtrust/issues/new)
 3. Include:
-   - Refferq version
+   - DealTrust version
    - Steps to reproduce
    - Expected vs actual behavior
    - Error messages/logs
@@ -381,15 +381,15 @@ Webhook support is coming in v1.1.0 (November 2025). See [Roadmap](Roadmap).
 ### How do I request a feature?
 
 1. Check [Roadmap](Roadmap) to see if it's planned
-2. Search [existing requests](https://github.com/refferq/refferq/discussions)
-3. Create a [new discussion](https://github.com/refferq/refferq/discussions/new)
+2. Search [existing requests](https://github.com/dealtrust/dealtrust/discussions)
+3. Create a [new discussion](https://github.com/dealtrust/dealtrust/discussions/new)
 4. Explain the feature and use case
 
-### Can I hire someone to customize Refferq?
+### Can I hire someone to customize DealTrust?
 
 Yes! You can:
 - Hire freelance developers
-- Contact us for custom development: hello@refferq.com
+- Contact us for custom development: hello@dealtrust.com
 - Post in GitHub Discussions to find community developers
 
 ### How can I contribute?
@@ -409,9 +409,9 @@ Not yet. Community channels are planned for when we reach 500+ GitHub stars.
 
 ## Security & Privacy
 
-### Is Refferq secure?
+### Is DealTrust secure?
 
-Yes, Refferq follows security best practices:
+Yes, DealTrust follows security best practices:
 - JWT authentication
 - Password hashing (bcrypt)
 - SQL injection prevention (Prisma)
@@ -424,9 +424,9 @@ See [Security Best Practices](Security-Best-Practices) for production hardening.
 
 Data is stored in your PostgreSQL database. You control where the database is hosted.
 
-### Is Refferq GDPR compliant?
+### Is DealTrust GDPR compliant?
 
-Refferq provides the tools, but GDPR compliance depends on how you use it. You're responsible for:
+DealTrust provides the tools, but GDPR compliance depends on how you use it. You're responsible for:
 - Privacy policy
 - Cookie consent
 - Data processing agreements
@@ -441,9 +441,9 @@ Yes, admins can delete users, which removes all associated data (affiliates, ref
 
 Passwords are hashed using bcrypt before storage. We never store plain-text passwords.
 
-### Does Refferq track users?
+### Does DealTrust track users?
 
-Refferq tracks affiliate activity (referrals, commissions) for program management. No third-party tracking by default.
+DealTrust tracks affiliate activity (referrals, commissions) for program management. No third-party tracking by default.
 
 ---
 
@@ -472,7 +472,7 @@ Always backup your database before upgrading! See [Backup & Recovery](Backup-Rec
 
 ## Performance
 
-### How many affiliates can Refferq handle?
+### How many affiliates can DealTrust handle?
 
 Performance depends on your infrastructure:
 - **Small (< 100)** - Free tier hosting (Vercel)
@@ -498,14 +498,14 @@ No technical limit. Database and storage are the only constraints.
 
 - **Search this wiki** - Use the search bar
 - **Check GitHub Issues** - Someone may have asked
-- **Ask in Discussions** - [GitHub Discussions](https://github.com/refferq/refferq/discussions)
-- **Email us** - hello@refferq.com
+- **Ask in Discussions** - [GitHub Discussions](https://github.com/dealtrust/dealtrust/discussions)
+- **Email us** - hello@dealtrust.com
 
 ---
 
 <p align="center">
   <strong>Didn't find your answer?</strong><br>
-  Ask in <a href="https://github.com/refferq/refferq/discussions">GitHub Discussions</a>
+  Ask in <a href="https://github.com/dealtrust/dealtrust/discussions">GitHub Discussions</a>
 </p>
 
 <p align="center">

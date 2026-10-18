@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { prisma } from '@/lib/prisma';
+import { STAGES_ACCEPTED } from '@/lib/partnership';
 
 
 export async function GET(request: NextRequest) {
@@ -55,8 +57,8 @@ export async function GET(request: NextRequest) {
           email: affiliate.user.email,
           referralCode: affiliate.referralCode,
           totalReferrals: affiliate.referrals.length,
-          approvedReferrals: affiliate.referrals.filter(r => r.status === 'APPROVED').length,
-          pendingReferrals: affiliate.referrals.filter(r => r.status === 'PENDING').length,
+          approvedReferrals: affiliate.referrals.filter(r => (STAGES_ACCEPTED as string[]).includes(r.status)).length,
+          pendingReferrals: affiliate.referrals.filter(r => r.status === 'REGISTERED').length,
           totalCommissions: affiliate.commissions.length,
           totalEarnings: affiliate.commissions.reduce((sum, c) => sum + c.amountCents, 0),
           paidEarnings: affiliate.commissions.filter(c => c.paidAt !== null).reduce((sum, c) => sum + c.amountCents, 0),
@@ -171,7 +173,7 @@ export async function GET(request: NextRequest) {
       const totalAffiliates = await prisma.affiliate.count();
       const totalReferrals = await prisma.referral.count({ where: dateFilter });
       const approvedReferrals = await prisma.referral.count({ 
-        where: { ...dateFilter, status: 'APPROVED' } 
+        where: { ...dateFilter, status: { in: STAGES_ACCEPTED } } 
       });
       const totalCommissions = await prisma.commission.aggregate({
         where: dateFilter,

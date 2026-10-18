@@ -4,8 +4,8 @@ import { db } from '@/lib/prisma';
 import './globals.css';
 
 export const metadata = {
-  title: 'Refferq - Modern Affiliate Marketing Platform',
-  description: 'Next-generation affiliate marketing platform with comprehensive tracking, commission management, and payout automation.',
+  title: 'DealTrust - Partnership Trust Platform',
+  description: 'B2B referral partnership platform with timestamped lead registration, deal pipelines, commission on collected revenue, payouts, and full audit trails.',
 };
 
 export default async function RootLayout({

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { logAuditAction } from '@/lib/audit';
+import { transitionReferralStage, type DealStage } from '@/lib/partnership';
 
 
 export async function PUT(
@@ -51,50 +53,30 @@ export async function PUT(
     const metadata = referral.metadata as Record<string, any> || {};
     const estimatedValueCents = Number(metadata?.estimated_value) * 100 || 10000;
 
-    const updatedReferral = await prisma.referral.update({
-      where: { id: params.id },
-      data: {
-        status: action === 'approve' ? 'APPROVED' : 'REJECTED',
-        reviewNotes: reviewNotes || null,
-        reviewedBy: user.id,
-        reviewedAt: new Date()
-      }
-    });
-
-    // If approved, create conversion and commission
-    if (action === 'approve') {
-      // Get commission rate from partner group or use default 10%
-      const commissionRate = referral.affiliate.partnerGroup?.commissionRate
-        ? referral.affiliate.partnerGroup.commissionRate / 100
-        : 0.1;
-
-      const conversion = await prisma.conversion.create({
-        data: {
-          affiliateId: referral.affiliateId,
-          referralId: referral.id,
-          eventType: 'PURCHASE',
-          amountCents: estimatedValueCents,
-          status: 'PENDING'
-        }
+    // B2B pipeline: approve/reject are validated stage transitions
+    // (REGISTERED -> ACKNOWLEDGED / any -> LOST) with history + audit.
+    const toStage = (action === 'approve' ? 'ACKNOWLEDGED' : 'LOST') as DealStage;
+    let updatedReferral;
+    try {
+      updatedReferral = await transitionReferralStage({
+        referralId: params.id,
+        toStage,
+        actorId: user.id,
+        note: reviewNotes || (action === 'approve' ? 'Approved by admin' : 'Rejected by admin'),
       });
-
-      const commissionAmount = Math.round(estimatedValueCents * commissionRate);
-
-      await prisma.commission.create({
-        data: {
-          affiliateId: referral.affiliateId,
-          conversionId: conversion.id,
-          userId: referral.affiliate.userId,
-          rate: commissionRate,
-          amountCents: commissionAmount,
-          status: 'PENDING'
-        }
-      });
+    } catch (err: any) {
+      const msg = err?.message || 'Failed to process referral';
+      const status = msg.startsWith('Invalid stage transition') ? 409 : 400;
+      return NextResponse.json({ error: msg }, { status });
     }
+
+    // B2B item 3: commission accrues ONLY when client money actually clears
+    // (via the transaction collect endpoint). Approving a lead no longer
+    // creates conversions/commissions on estimated value.
 
     return NextResponse.json({
       success: true,
-      message: `Referral ${action}d successfully`,
+      message: `Referral moved to ${toStage} successfully`,
       referral: updatedReferral
     });
 
@@ -143,72 +125,111 @@ export async function PATCH(
       );
     }
 
-    // If action is provided, handle approve/reject (legacy behavior)
+    // If action is provided, handle approve/reject as pipeline transitions.
     if (action && ['approve', 'reject'].includes(action)) {
-      const updatedReferral = await prisma.referral.update({
-        where: { id: params.id },
-        data: {
-          status: action === 'approve' ? 'APPROVED' : 'REJECTED',
-          reviewNotes: reviewNotes || null,
-          reviewedBy: user.id,
-          reviewedAt: new Date()
-        }
-      });
-
-      // If approved, create conversion and commission
-      if (action === 'approve') {
-        const refMetadata = referral.metadata as Record<string, any> || {};
-        const estValueCents = Number(refMetadata?.estimated_value) * 100 || 10000;
-        const commissionRate = referral.affiliate.partnerGroup?.commissionRate
-          ? referral.affiliate.partnerGroup.commissionRate / 100
-          : 0.1;
-
-        const conversion = await prisma.conversion.create({
-          data: {
-            affiliateId: referral.affiliateId,
-            referralId: referral.id,
-            eventType: 'PURCHASE',
-            amountCents: estValueCents,
-            status: 'PENDING'
-          }
+      const toStage = (action === 'approve' ? 'ACKNOWLEDGED' : 'LOST') as DealStage;
+      let updatedReferral;
+      try {
+        updatedReferral = await transitionReferralStage({
+          referralId: params.id,
+          toStage,
+          actorId: user.id,
+          note: reviewNotes || (action === 'approve' ? 'Approved by admin' : 'Rejected by admin'),
         });
-
-        const commissionAmount = Math.round(estValueCents * commissionRate);
-        
-        await prisma.commission.create({
-          data: {
-            affiliateId: referral.affiliateId,
-            conversionId: conversion.id,
-            userId: referral.affiliate.userId,
-            rate: commissionRate,
-            amountCents: commissionAmount,
-            status: 'PENDING'
-          }
-        });
+      } catch (err: any) {
+        const msg = err?.message || 'Failed to process referral';
+        const httpStatus = msg.startsWith('Invalid stage transition') ? 409 : 400;
+        return NextResponse.json({ error: msg }, { status: httpStatus });
       }
+
+      // B2B item 3: commission accrues ONLY when client money actually clears
+      // (via the transaction collect endpoint) — never on estimated value.
 
       return NextResponse.json({
         success: true,
-        message: `Referral ${action}d successfully`,
+        message: `Referral moved to ${toStage} successfully`,
         referral: updatedReferral
       });
     }
 
     // Otherwise, handle customer detail updates
     const updateData: any = {};
-    
+
     if (leadName !== undefined) updateData.leadName = leadName;
-    if (leadEmail !== undefined) updateData.leadEmail = leadEmail;
+    if (leadEmail !== undefined) {
+      const normalized = leadEmail.toLowerCase().trim();
+      // B2B dedupe guard: renaming a lead onto an already-registered email
+      // for the same company is blocked (would violate the unique index).
+      if (normalized !== referral.leadEmail) {
+        const clash = await prisma.referral.findFirst({
+          where: {
+            id: { not: params.id },
+            partnerCompanyId: referral.partnerCompanyId,
+            leadEmail: normalized,
+          },
+          select: { id: true },
+        });
+        if (clash) {
+          return NextResponse.json(
+            { error: 'Another lead with this email is already registered for the same company' },
+            { status: 409 }
+          );
+        }
+      }
+      updateData.leadEmail = normalized;
+    }
+    // B2B pipeline: explicit stage moves go through validated transitions
+    // (history + audit). Field edits (name/email) stay a direct update.
+    let updatedReferral;
     if (status !== undefined) {
-      // Map status values
-      updateData.status = status;
-      updateData.reviewedBy = user.id;
-      updateData.reviewedAt = new Date();
+      const toStage = String(status).toUpperCase() as DealStage;
+      try {
+        updatedReferral = await transitionReferralStage({
+          referralId: params.id,
+          toStage,
+          actorId: user.id,
+          note: reviewNotes || 'Stage updated by admin',
+        });
+      } catch (err: any) {
+        const msg = err?.message || 'Failed to update stage';
+        const httpStatus = msg.startsWith('Invalid stage transition') ? 409 : 400;
+        return NextResponse.json({ error: msg }, { status: httpStatus });
+      }
+      // Apply any simultaneous field edits on top of the transition.
+      if (updateData.leadName !== undefined || updateData.leadEmail !== undefined) {
+        updatedReferral = await prisma.referral.update({
+          where: { id: params.id },
+          data: {
+            ...(updateData.leadName !== undefined ? { leadName: updateData.leadName } : {}),
+            ...(updateData.leadEmail !== undefined ? { leadEmail: updateData.leadEmail } : {}),
+          },
+        });
+      }
+    } else {
+      updatedReferral = await prisma.referral.update({
+        where: { id: params.id },
+        data: updateData
+      });
     }
 
-    const updatedReferral = await prisma.referral.update({
-      where: { id: params.id },
-      data: updateData
+    // Tamper-evident: every lead edit is audit-logged with before/after.
+    await logAuditAction({
+      actorId: user.id,
+      action: 'referral.updated',
+      objectType: 'Referral',
+      objectId: params.id,
+      payload: {
+        before: {
+          leadName: referral.leadName,
+          leadEmail: referral.leadEmail,
+          status: referral.status,
+        },
+        after: {
+          leadName: updatedReferral.leadName,
+          leadEmail: updatedReferral.leadEmail,
+          status: updatedReferral.status,
+        },
+      },
     });
 
     return NextResponse.json({
@@ -226,7 +247,10 @@ export async function PATCH(
   }
 }
 
-// Add DELETE method to allow admins to delete referrals
+// DELETE is BLOCKED: leads are immutable (B2B item 2). A referral is the
+// timestamped proof of attribution and must never be deletable — by API,
+// by admin UI, or by cascade (schema uses onDelete: Restrict).
+// Deletion attempts are audit-logged.
 export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -234,7 +258,7 @@ export async function DELETE(
   try {
     const params = await context.params;
     const userId = request.headers.get('x-user-id')!;
-    
+
     const user = await prisma.user.findUnique({
       where: { id: userId }
     });
@@ -246,32 +270,23 @@ export async function DELETE(
       );
     }
 
-    // Check if referral exists
-    const referral = await prisma.referral.findUnique({
-      where: { id: params.id }
+    await logAuditAction({
+      actorId: user.id,
+      action: 'referral.delete_blocked',
+      objectType: 'Referral',
+      objectId: params.id,
+      payload: { reason: 'Leads are immutable and cannot be deleted' },
     });
 
-    if (!referral) {
-      return NextResponse.json(
-        { error: 'Referral not found' },
-        { status: 404 }
-      );
-    }
-
-    // Delete the referral (will cascade delete related commissions due to Prisma schema)
-    await prisma.referral.delete({
-      where: { id: params.id }
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: 'Referral deleted successfully'
-    });
+    return NextResponse.json(
+      { error: 'Gone: referrals (leads) are immutable and cannot be deleted' },
+      { status: 410 }
+    );
 
   } catch (error) {
     console.error('Delete referral error:', error);
     return NextResponse.json(
-      { error: 'Failed to delete referral' },
+      { error: 'Failed to process request' },
       { status: 500 }
     );
   }

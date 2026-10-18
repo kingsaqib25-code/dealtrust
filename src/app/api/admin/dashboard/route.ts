@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { STAGES_ACCEPTED } from '@/lib/partnership';
 
 
 export async function GET(request: NextRequest) {
@@ -32,11 +33,11 @@ export async function GET(request: NextRequest) {
     const totalConversions = await prisma.conversion.count();
     
     const pendingReferrals = await prisma.referral.count({
-      where: { status: 'PENDING' }
+      where: { status: 'REGISTERED' }
     });
-    
+
     const approvedReferrals = await prisma.referral.count({
-      where: { status: 'APPROVED' }
+      where: { status: { in: STAGES_ACCEPTED } }
     });
     
     // Calculate ACTUAL transaction revenue from conversions

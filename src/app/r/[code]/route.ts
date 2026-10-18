@@ -40,7 +40,7 @@ export async function GET(
     const { code } = await params;
     const referralCode = code;
     const searchParams = request.nextUrl.searchParams;
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.refferq.com';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.dealtrust.com';
 
     // Support both 'target' and 'dest' (Plan called it 'dest')
     const rawTarget = searchParams.get('dest') || searchParams.get('target');
@@ -99,7 +99,7 @@ export async function GET(
           affiliateId: affiliate.id,
           leadName: 'Click Visitor',
           leadEmail: `click-${attributionKey}@tracking.internal`,
-          status: 'PENDING',
+          status: 'REGISTERED', // B2B: legacy click-tracking mapped to pipeline
           metadata: {
             source: 'referral_link',
             attribution_key: attributionKey,
@@ -167,7 +167,7 @@ export async function GET(
     console.error('Referral tracking error:', error);
 
     // Fallback redirect on error (safe — always redirects to app URL)
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.refferq.com';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.dealtrust.com';
     return NextResponse.redirect(appUrl);
   }
 }

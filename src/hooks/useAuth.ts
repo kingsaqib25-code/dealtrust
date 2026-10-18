@@ -9,6 +9,9 @@ interface User {
   name: string;
   role: string;
   hasAffiliate: boolean;
+  // B2B partnership portal: present for PARTNER_COMPANY users.
+  hasCompany?: boolean;
+  company?: { id: string; name: string } | null;
   profilePicture?: string;
 }
 

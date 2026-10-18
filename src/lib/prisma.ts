@@ -133,7 +133,7 @@ export class DatabaseService {
         leadName: referralData.leadName,
         leadEmail: referralData.leadEmail,
         metadata: referralData.metadata || {},
-        status: 'PENDING',
+        status: 'REGISTERED', // B2B pipeline: new leads start REGISTERED
       },
     });
   }
@@ -159,8 +159,9 @@ export class DatabaseService {
   }
 
   async getPendingReferrals() {
+    // B2B: "pending" now means REGISTERED (awaiting partner acknowledgment).
     return await prisma.referral.findMany({
-      where: { status: 'PENDING' },
+      where: { status: 'REGISTERED' },
       include: {
         affiliate: {
           include: {
@@ -447,8 +448,8 @@ export class DatabaseService {
       prisma.user.count({ where: { role: 'AFFILIATE', status: 'ACTIVE' } }),
       prisma.user.count({ where: { role: 'AFFILIATE', status: 'INACTIVE' } }),
       prisma.referral.count(),
-      prisma.referral.count({ where: { status: 'PENDING' } }),
-      prisma.referral.count({ where: { status: 'APPROVED' } }),
+      prisma.referral.count({ where: { status: 'REGISTERED' } }),
+      prisma.referral.count({ where: { status: { in: ['ACKNOWLEDGED', 'INTRO_DONE', 'NEGOTIATING', 'WON'] } } }),
       prisma.conversion.count(),
       prisma.commission.count(),
       prisma.referralClick.count(),
@@ -485,9 +486,11 @@ export class DatabaseService {
       }
 
       // Create admin user
+      // SECURITY: hash the seed password — createUser expects a pre-hashed value
+      const seedPasswordHash = await bcrypt.hash('password', 12);
       const adminUser = await this.createUser({
         email: 'admin@example.com',
-        password: 'password',
+        password: seedPasswordHash,
         name: 'Admin User',
         role: 'ADMIN',
       });
@@ -495,14 +498,14 @@ export class DatabaseService {
       // Create affiliate users
       const affiliate1User = await this.createUser({
         email: 'sarah.johnson@example.com',
-        password: 'password',
+        password: seedPasswordHash,
         name: 'Sarah Johnson',
         role: 'AFFILIATE',
       });
 
       const affiliate2User = await this.createUser({
         email: 'david.lee@example.com',
-        password: 'password',
+        password: seedPasswordHash,
         name: 'David Lee',
         role: 'AFFILIATE',
       });
@@ -582,7 +585,7 @@ export class DatabaseService {
 
       // Approve one referral and create conversion
       await this.updateReferral(referral2.id, {
-        status: 'APPROVED',
+        status: 'ACKNOWLEDGED', // B2B: demo data mapped to pipeline stage
         reviewedBy: adminUser.id,
         reviewedAt: new Date(),
         reviewNotes: 'Approved - verified lead quality',

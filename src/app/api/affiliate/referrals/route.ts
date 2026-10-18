@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { logAuditAction } from '@/lib/audit';
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,15 +49,61 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { leadName, leadEmail, company, notes, estimatedValue } = data;
+    const { leadName, leadEmail, company, notes, estimatedValue, partnerCompanyId } = data;
 
-    // Create the referral
+    const normalizedEmail = leadEmail.toLowerCase().trim();
+
+    // B2B: every lead must be registered FOR a partner company.
+    if (!partnerCompanyId) {
+      return NextResponse.json(
+        { error: 'partnerCompanyId is required' },
+        { status: 400 }
+      );
+    }
+
+    const partnerCompany = await prisma.partnerCompany.findUnique({
+      where: { id: partnerCompanyId },
+    });
+    if (!partnerCompany || partnerCompany.status !== 'ACTIVE') {
+      return NextResponse.json(
+        { error: 'Partner company not found or not active' },
+        { status: 400 }
+      );
+    }
+
+    // B2B dedupe: the same lead email cannot be registered twice for the same
+    // partner company. The DB unique index is the final guard; this check
+    // gives a clean 409 instead of a constraint error.
+    const existing = await prisma.referral.findFirst({
+      where: {
+        partnerCompanyId: partnerCompany.id,
+        leadEmail: normalizedEmail,
+      },
+      select: { id: true, status: true, createdAt: true },
+    });
+    if (existing) {
+      return NextResponse.json(
+        {
+          error: 'This lead is already registered for this partner company',
+          existingReferral: {
+            id: existing.id,
+            status: existing.status,
+            registeredAt: existing.createdAt,
+          },
+        },
+        { status: 409 }
+      );
+    }
+
+    // Create the referral. createdAt is the immutable proof-of-registration
+    // timestamp — leads are never deleted. Initial stage: REGISTERED.
     const referral = await prisma.referral.create({
       data: {
         affiliateId: user.affiliate.id,
+        partnerCompanyId: partnerCompany.id,
         leadName: leadName.trim(),
-        leadEmail: leadEmail.toLowerCase().trim(),
-        status: 'PENDING',
+        leadEmail: normalizedEmail,
+        status: 'REGISTERED',
         metadata: {
           company: company || '',
           notes: notes || '',
@@ -64,6 +111,31 @@ export async function POST(request: NextRequest) {
           estimated_value: estimatedValue || 0,
         },
       }
+    });
+
+    // Seed the append-only stage history (null -> REGISTERED).
+    await prisma.referralStageHistory.create({
+      data: {
+        referralId: referral.id,
+        fromStage: null,
+        toStage: 'REGISTERED',
+        actorId: user.id,
+        note: 'Lead registered',
+      },
+    });
+
+    // Tamper-evident: every lead registration is audit-logged (who/when/what).
+    await logAuditAction({
+      actorId: user.id,
+      action: 'referral.registered',
+      objectType: 'Referral',
+      objectId: referral.id,
+      payload: {
+        leadName: referral.leadName,
+        leadEmail: referral.leadEmail,
+        partnerCompanyId: partnerCompany.id,
+        partnerCompanyName: partnerCompany.name,
+      },
     });
 
     return NextResponse.json({

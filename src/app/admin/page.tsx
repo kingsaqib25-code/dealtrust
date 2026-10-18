@@ -376,7 +376,7 @@ export default function AdminDashboardPage() {
                         <p className="text-xs text-muted-foreground font-mono">{affiliate.referralCode}</p>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-sm font-semibold">₹{(affiliate.totalRevenue / 100).toFixed(2)}</p>
+                        <p className="text-sm font-semibold">₹{((Number(affiliate.totalRevenue) || 0) / 100).toFixed(2)}</p>
                         <p className="text-[11px] text-muted-foreground">{affiliate.totalReferrals} referrals</p>
                       </div>
                     </div>

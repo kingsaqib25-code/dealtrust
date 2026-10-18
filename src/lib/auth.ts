@@ -19,7 +19,9 @@ export interface RegisterData {
   email: string;
   password: string;
   name: string;
-  role: string; // 'affiliate' or 'admin' from the form
+  role: string; // 'affiliate', 'admin', or 'partner_company' from the form
+  // B2B: required when role is 'partner_company' — links the user to a company.
+  partnerCompanyId?: string;
 }
 
 class AuthService {
@@ -53,6 +55,21 @@ class AuthService {
       const userRoleLower = data.role.toLowerCase();
       const initialStatus = userRoleLower === 'admin' ? 'ACTIVE' : 'PENDING';
 
+      // B2B: partner-company users must be linked to an existing company.
+      let partnerCompanyId: string | undefined;
+      if (userRoleLower === 'partner_company') {
+        if (!data.partnerCompanyId) {
+          return { success: false, message: 'Partner company is required' };
+        }
+        const company = await prisma.partnerCompany.findUnique({
+          where: { id: data.partnerCompanyId },
+        });
+        if (!company) {
+          return { success: false, message: 'Partner company not found' };
+        }
+        partnerCompanyId = company.id;
+      }
+
       // Create user using prisma client directly or db service
       // We'll use prisma client here since we've already hashed the password
       const user = await prisma.user.create({
@@ -61,7 +78,8 @@ class AuthService {
           name: data.name,
           password: hashedPassword,
           role: data.role.toUpperCase() as Role,
-          status: initialStatus as UserStatus
+          status: initialStatus as UserStatus,
+          ...(partnerCompanyId ? { partnerCompanyId } : {}),
         }
       });
 

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { prisma } from '@/lib/prisma';
+import { STAGES_ACCEPTED } from '@/lib/partnership';
 import { resend } from '@/lib/email';
 
 async function verifyAdmin(request: NextRequest) {
@@ -81,21 +83,21 @@ export async function POST(request: NextRequest) {
         </p>
       </div>
       <div class="footer">
-        <p>This report was sent from Refferq by ${user.name} (${user.email})</p>
-        <p>© ${new Date().getFullYear()} Refferq. All rights reserved.</p>
+        <p>This report was sent from DealTrust by ${user.name} (${user.email})</p>
+        <p>© ${new Date().getFullYear()} DealTrust. All rights reserved.</p>
       </div>
     </body>
     </html>
     `;
 
     // Send to all recipients
-    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Refferq <noreply@refferq.com>';
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'DealTrust <noreply@dealtrust.com>';
     const results = await Promise.allSettled(
       recipients.map((email: string) =>
         resend.emails.send({
           from: fromEmail,
           to: email.trim(),
-          subject: `[Refferq] ${reportData.type || 'Report'} — ${reportDate}`,
+          subject: `[DealTrust] ${reportData.type || 'Report'} — ${reportDate}`,
           html,
         })
       )
@@ -136,7 +138,7 @@ async function generateReportData(reportType: string, startDate?: string, endDat
         email: a.user.email,
         referralCode: a.referralCode,
         totalReferrals: a.referrals.length,
-        approved: a.referrals.filter((r) => r.status === 'APPROVED').length,
+        approved: a.referrals.filter((r) => (STAGES_ACCEPTED as string[]).includes(r.status)).length,
         totalEarningsCents: a.commissions.reduce((s, c) => s + c.amountCents, 0),
         joinedDate: a.createdAt.toISOString().slice(0, 10),
       })),
@@ -200,7 +202,7 @@ async function generateReportData(reportType: string, startDate?: string, endDat
   // Default: summary
   const totalAffiliates = await prisma.affiliate.count();
   const totalReferrals = await prisma.referral.count({ where: dateFilter });
-  const approvedReferrals = await prisma.referral.count({ where: { ...dateFilter, status: 'APPROVED' } });
+  const approvedReferrals = await prisma.referral.count({ where: { ...dateFilter, status: { in: STAGES_ACCEPTED } } });
   const totalCommissions = await prisma.commission.aggregate({
     where: dateFilter,
     _sum: { amountCents: true },

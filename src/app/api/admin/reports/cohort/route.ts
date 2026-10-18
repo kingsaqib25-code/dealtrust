@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { prisma } from '@/lib/prisma';
+import { STAGES_ACCEPTED } from '@/lib/partnership';
 
 async function verifyAdmin(request: NextRequest) {
   try {
@@ -90,7 +92,7 @@ export async function GET(request: NextRequest) {
       const cohort = cohorts.get(cohortKey)!;
       cohort.affiliateCount++;
       cohort.totalReferrals += affiliate.referrals.length;
-      cohort.approvedReferrals += affiliate.referrals.filter((r) => r.status === 'APPROVED').length;
+      cohort.approvedReferrals += affiliate.referrals.filter((r) => (STAGES_ACCEPTED as string[]).includes(r.status)).length;
       cohort.totalCommissions += affiliate.commissions.length;
       cohort.totalEarnings += affiliate.commissions.reduce((sum, c) => sum + c.amountCents, 0);
 

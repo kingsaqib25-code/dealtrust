@@ -1,6 +1,6 @@
-# Contributing to Refferq
+# Contributing to DealTrust
 
-Thank you for your interest in contributing to Refferq! This guide will help you get started.
+Thank you for your interest in contributing to DealTrust! This guide will help you get started.
 
 ---
 
@@ -37,11 +37,11 @@ By participating in this project, you agree to abide by our [Code of Conduct](Co
 
 ### 🐛 Report Bugs
 
-Found a bug? [Create an issue](https://github.com/refferq/refferq/issues/new?template=bug_report.md)
+Found a bug? [Create an issue](https://github.com/dealtrust/dealtrust/issues/new?template=bug_report.md)
 
 ### ✨ Suggest Features
 
-Have an idea? [Start a discussion](https://github.com/refferq/refferq/discussions/new)
+Have an idea? [Start a discussion](https://github.com/dealtrust/dealtrust/discussions/new)
 
 ### 📝 Improve Documentation
 
@@ -57,7 +57,7 @@ Help test new features and report issues.
 
 ### 🌍 Translate
 
-Help make Refferq available in more languages.
+Help make DealTrust available in more languages.
 
 ### 💬 Help Others
 
@@ -80,13 +80,13 @@ Answer questions in GitHub Discussions.
 
 2. **Clone your fork:**
    ```bash
-   git clone https://github.com/YOUR_USERNAME/refferq.git
-   cd refferq
+   git clone https://github.com/YOUR_USERNAME/dealtrust.git
+   cd dealtrust
    ```
 
 3. **Add upstream remote:**
    ```bash
-   git remote add upstream https://github.com/refferq/refferq.git
+   git remote add upstream https://github.com/dealtrust/dealtrust.git
    ```
 
 ### Install Dependencies
@@ -99,7 +99,7 @@ npm install
 
 ```bash
 # Create database
-createdb refferq_dev
+createdb dealtrust_dev
 
 # Copy environment file
 cp .env.example .env.local
@@ -463,7 +463,7 @@ If applicable
 **Environment:**
 - OS: [e.g. macOS 14]
 - Browser: [e.g. Chrome 120]
-- Refferq version: [e.g. 1.0.0]
+- DealTrust version: [e.g. 1.0.0]
 - Node version: [e.g. 20.10]
 
 **Additional context**
@@ -529,9 +529,9 @@ Documentation improvements are always welcome:
 
 ### Getting Help
 
-- **[GitHub Discussions](https://github.com/refferq/refferq/discussions)** - Ask questions
-- **[GitHub Issues](https://github.com/refferq/refferq/issues)** - Report bugs
-- **Email** - hello@refferq.com
+- **[GitHub Discussions](https://github.com/dealtrust/dealtrust/discussions)** - Ask questions
+- **[GitHub Issues](https://github.com/dealtrust/dealtrust/issues)** - Report bugs
+- **Email** - hello@dealtrust.com
 
 ### Communication Guidelines
 
@@ -561,11 +561,11 @@ By contributing, you agree that your contributions will be licensed under the MI
 
 - Read the [Development Setup](Development-Setup) guide
 - Check the [FAQ](FAQ)
-- Ask in [GitHub Discussions](https://github.com/refferq/refferq/discussions)
+- Ask in [GitHub Discussions](https://github.com/dealtrust/dealtrust/discussions)
 
 ---
 
 <p align="center">
-  <strong>Thank you for contributing to Refferq!</strong><br>
+  <strong>Thank you for contributing to DealTrust!</strong><br>
   Together we're building something amazing 🚀
 </p>

@@ -12,8 +12,13 @@ export async function middleware(request: NextRequest) {
     // 1. Define protected routes
     const isAdminRoute = pathname.startsWith('/api/admin') || pathname.startsWith('/admin');
     const isAffiliateRoute = pathname.startsWith('/api/affiliate') || pathname.startsWith('/affiliate');
+    // B2B partnership portal: partner-company users get their own scoped area.
+    const isPartnerRoute = pathname.startsWith('/api/partner') || pathname.startsWith('/partner');
+    // /api/auth/me must also go through token verification + header injection
+    // (the useAuth hook depends on it); it has no role restriction of its own.
+    const isAuthMeRoute = pathname === '/api/auth/me';
 
-    if (!isAdminRoute && !isAffiliateRoute) {
+    if (!isAdminRoute && !isAffiliateRoute && !isPartnerRoute && !isAuthMeRoute) {
         return NextResponse.next();
     }
 
@@ -58,12 +63,28 @@ export async function middleware(request: NextRequest) {
             return NextResponse.redirect(new URL('/login', request.url));
         }
 
-        // 5. Inject user info into headers for API usage (optional but helpful)
-        const response = NextResponse.next();
-        response.headers.set('x-user-id', payload.userId as string);
-        response.headers.set('x-user-role', userRole);
+        // Partner-company users see ONLY their own company's data; scoping is
+        // enforced per-route via requirePartnerCompany(). Admins may also
+        // enter for support/debugging.
+        if (isPartnerRoute && userRole !== 'PARTNER_COMPANY' && userRole !== 'ADMIN') {
+            if (pathname.startsWith('/api/')) {
+                return NextResponse.json(
+                    { error: 'Forbidden: Partner company access required' },
+                    { status: 403 }
+                );
+            }
+            return NextResponse.redirect(new URL('/login', request.url));
+        }
 
-        return response;
+        // 5. Inject user info into the downstream REQUEST headers for API routes.
+        // (Must be set on request headers — response headers are invisible to route handlers.)
+        const requestHeaders = new Headers(request.headers);
+        requestHeaders.set('x-user-id', payload.userId as string);
+        requestHeaders.set('x-user-role', userRole);
+
+        return NextResponse.next({
+            request: { headers: requestHeaders },
+        });
     } catch (error) {
         if (pathname.startsWith('/api/')) {
             return NextResponse.json(
@@ -80,8 +101,10 @@ export const config = {
     matcher: [
         '/admin/:path*',
         '/affiliate/:path*',
+        '/partner/:path*',
         '/api/admin/:path*',
         '/api/affiliate/:path*',
+        '/api/partner/:path*',
         '/api/auth/me',
     ],
 };

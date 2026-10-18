@@ -91,22 +91,24 @@ export async function POST(req: NextRequest) {
     }
 
     // Create referral if doesn't exist
+    // NOTE (B2B): legacy affiliate-tracking flow. Mapped to pipeline stages:
+    // a tracked conversion marks the lead WON; new click leads REGISTERED.
     if (!referral && customerEmail) {
       referral = await prisma.referral.create({
         data: {
           leadEmail: customerEmail,
           leadName: customerName || 'Unknown Customer',
           affiliateId: affiliate.id,
-          status: 'APPROVED',
+          status: 'WON',
           metadata: metadata || {},
         },
       });
-    } else if (referral && referral.status === 'PENDING') {
-      // Update referral status to APPROVED
+    } else if (referral && referral.status === 'REGISTERED') {
+      // Update referral status to WON
       referral = await prisma.referral.update({
         where: { id: referral.id },
         data: {
-          status: 'APPROVED',
+          status: 'WON',
           metadata: {
             ...(referral.metadata as object),
             ...metadata,

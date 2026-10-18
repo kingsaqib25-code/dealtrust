@@ -38,12 +38,12 @@
   <!-- Logo Icon (R in a circle) -->
   <g transform="translate(320, 180)">
     <circle cx="0" cy="0" r="60" fill="white" opacity="0.95" filter="url(#glow)"/>
-    <text x="0" y="0" font-family="Arial, sans-serif" font-size="72" font-weight="bold" fill="#10b981" text-anchor="middle" dominant-baseline="central">R</text>
+    <text x="0" y="0" font-family="Arial, sans-serif" font-size="72" font-weight="bold" fill="#10b981" text-anchor="middle" dominant-baseline="central">D</text>
   </g>
   
   <!-- Main Title -->
   <text x="420" y="220" font-family="Arial, sans-serif" font-size="96" font-weight="bold" fill="white" filter="url(#glow)">
-    Refferq
+    DealTrust
   </text>
   
   <!-- Tagline -->

@@ -40,11 +40,11 @@ import {
   XCircle,
   Clock,
   Save,
-  Trash2,
   Link2,
   FileText,
   Shield,
   Loader2,
+  Lock,
 } from 'lucide-react';
 
 interface Referral {
@@ -66,12 +66,23 @@ interface Referral {
     partnerGroupId: string | null;
     commissionRate: number;
   };
+  partnerCompany?: { id: string; name: string } | null;
+  stageHistory?: {
+    fromStage: string | null;
+    toStage: string;
+    actorId: string;
+    note: string | null;
+    createdAt: string;
+  }[];
 }
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ElementType }> = {
-  PENDING: { label: 'Pending', variant: 'secondary', icon: Clock },
-  APPROVED: { label: 'Approved', variant: 'default', icon: CheckCircle2 },
-  REJECTED: { label: 'Rejected', variant: 'destructive', icon: XCircle },
+  REGISTERED: { label: 'Registered', variant: 'secondary', icon: Clock },
+  ACKNOWLEDGED: { label: 'Acknowledged', variant: 'default', icon: CheckCircle2 },
+  INTRO_DONE: { label: 'Intro Done', variant: 'default', icon: CheckCircle2 },
+  NEGOTIATING: { label: 'Negotiating', variant: 'default', icon: Clock },
+  WON: { label: 'Won', variant: 'default', icon: CheckCircle2 },
+  LOST: { label: 'Lost', variant: 'destructive', icon: XCircle },
 };
 
 export default function CustomerDetailPage() {
@@ -84,7 +95,6 @@ export default function CustomerDetailPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
   // Editable fields
   const [editName, setEditName] = useState('');
@@ -148,28 +158,50 @@ export default function CustomerDetailPage() {
       });
       if (res.ok) {
         await fetchReferral();
-        setReviewNotes('');
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || 'Action failed');
       }
     } catch (error) {
-      console.error('Failed to process action:', error);
+      console.error('Failed:', error);
     } finally {
       setActionLoading(false);
     }
   };
 
-  const handleDelete = async () => {
-    setDeleting(true);
+  // B2B pipeline: move the lead to any allowed next stage.
+  const NEXT_STAGES: Record<string, string[]> = {
+    REGISTERED: ['ACKNOWLEDGED', 'LOST'],
+    ACKNOWLEDGED: ['INTRO_DONE', 'LOST'],
+    INTRO_DONE: ['NEGOTIATING', 'LOST'],
+    NEGOTIATING: ['WON', 'LOST'],
+    WON: [],
+    LOST: [],
+  };
+
+  const handleStageChange = async (toStage: string) => {
+    setActionLoading(true);
     try {
-      const res = await fetch(`/api/admin/referrals/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/referrals/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: toStage, reviewNotes: reviewNotes || undefined }),
+      });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        router.push('/admin/customers');
+        await fetchReferral();
+      } else {
+        alert(data.error || 'Stage change failed');
       }
     } catch (error) {
-      console.error('Failed to delete:', error);
+      console.error('Failed:', error);
     } finally {
-      setDeleting(false);
+      setActionLoading(false);
     }
   };
+
+  // NOTE: leads are immutable — the delete action was removed (B2B item 2).
+  // The API returns 410 Gone for DELETE /api/admin/referrals/[id].
 
   if (loading) {
     return (
@@ -202,7 +234,7 @@ export default function CustomerDetailPage() {
     );
   }
 
-  const cfg = statusConfig[referral.status] || statusConfig.PENDING;
+  const cfg = statusConfig[referral.status] || statusConfig.REGISTERED;
   const StatusIcon = cfg.icon;
   const estimatedCommission = Math.round(referral.estimatedValue * referral.affiliate.commissionRate);
 
@@ -230,33 +262,12 @@ export default function CustomerDetailPage() {
             {cfg.label}
           </Badge>
         </div>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="destructive" size="sm">
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete this referral lead?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will permanently delete <strong>{referral.leadName}</strong> and all associated
-                conversions and commissions. This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDelete}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                disabled={deleting}
-              >
-                {deleting ? 'Deleting...' : 'Delete'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <div className="flex items-center gap-2 rounded-lg border border-muted bg-muted/40 px-3 py-2">
+          <Lock className="h-4 w-4 text-muted-foreground" />
+          <span className="text-xs text-muted-foreground">
+            Protected lead — immutable record, cannot be deleted
+          </span>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -337,8 +348,8 @@ export default function CustomerDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Review Actions Card - only for PENDING */}
-          {referral.status === 'PENDING' && (
+          {/* Review Actions Card - only for REGISTERED */}
+          {referral.status === 'REGISTERED' && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -454,6 +465,34 @@ export default function CustomerDetailPage() {
             </CardContent>
           </Card>
 
+          {/* B2B Pipeline: advance the lead through validated stages */}
+          {(NEXT_STAGES[referral.status] || []).length > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Deal Pipeline</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="mb-3 text-xs text-muted-foreground">
+                  Current stage: <strong>{referral.status.replace('_', ' ')}</strong>. Every move is
+                  timestamped and recorded.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {(NEXT_STAGES[referral.status] || []).map((s) => (
+                    <Button
+                      key={s}
+                      size="sm"
+                      variant={s === 'LOST' ? 'destructive' : 'outline'}
+                      disabled={actionLoading}
+                      onClick={() => handleStageChange(s)}
+                    >
+                      Move to {s.replace('_', ' ')}
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Timeline Card */}
           <Card>
             <CardHeader className="pb-3">
@@ -484,34 +523,54 @@ export default function CustomerDetailPage() {
                     </p>
                   </div>
                 </div>
+                {/* B2B: append-only stage history — every transition, who/when */}
+                {(referral.stageHistory || []).map((h, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <div className="mt-0.5 rounded-full bg-muted p-1">
+                      <Clock className="h-3 w-3 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">
+                        {h.fromStage ? `${h.fromStage.replace('_', ' ')} → ` : ''}
+                        {h.toStage.replace('_', ' ')}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(h.createdAt).toLocaleString('en-IN', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                        {h.note ? ` — ${h.note}` : ''}
+                      </p>
+                    </div>
+                  </div>
+                ))}
                 <div className="flex items-start gap-3">
                   <div className={`mt-0.5 rounded-full p-1 ${
-                    referral.status === 'APPROVED'
+                    referral.status === 'WON'
                       ? 'bg-green-100'
-                      : referral.status === 'REJECTED'
+                      : referral.status === 'LOST'
                         ? 'bg-red-100'
                         : 'bg-yellow-100'
                   }`}>
                     <StatusIcon className={`h-3 w-3 ${
-                      referral.status === 'APPROVED'
+                      referral.status === 'WON'
                         ? 'text-green-600'
-                        : referral.status === 'REJECTED'
+                        : referral.status === 'LOST'
                           ? 'text-red-600'
                           : 'text-yellow-600'
                     }`} />
                   </div>
                   <div>
                     <p className="text-sm font-medium">
-                      {referral.status === 'APPROVED'
-                        ? 'Approved'
-                        : referral.status === 'REJECTED'
-                          ? 'Rejected'
-                          : 'Awaiting Review'}
+                      {cfg.label}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {referral.status === 'PENDING'
-                        ? 'Needs admin review'
-                        : 'Decision recorded'}
+                      {referral.status === 'REGISTERED'
+                        ? 'Needs partner acknowledgment'
+                        : 'Stage recorded with timestamp'}
                     </p>
                   </div>
                 </div>

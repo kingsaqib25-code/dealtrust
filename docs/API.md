@@ -1,8 +1,8 @@
-# Refferq API Documentation
+# DealTrust API Documentation
 
-**Author: Refferq Team**
+**Author: DealTrust Team**
 
-Complete API reference for Refferq affiliate management platform.
+Complete API reference for DealTrust affiliate management platform.
 
 ## Table of Contents
 
@@ -500,5 +500,5 @@ Webhook support for external integrations is planned for future releases.
 
 ---
 
-**Documentation by Refferq Team**
+**Documentation by DealTrust Team**
 *Last Updated: October 2025*

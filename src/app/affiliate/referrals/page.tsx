@@ -74,10 +74,21 @@ export default function ReferralsPage() {
     leadName: '',
     leadEmail: '',
     estimatedValue: '0',
+    partnerCompanyId: '',
   });
+  const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
 
   useEffect(() => {
-    if (!authLoading && user) fetchReferrals();
+    if (!authLoading && user) {
+      fetchReferrals();
+      // B2B: referrer picks which partner company the lead is registered for.
+      fetch('/api/affiliate/partner-companies')
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.success) setCompanies(d.companies || []);
+        })
+        .catch(() => {});
+    }
   }, [authLoading, user]);
 
   const fetchReferrals = async () => {
@@ -101,16 +112,17 @@ export default function ReferralsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          lead_name: submitForm.leadName,
-          lead_email: submitForm.leadEmail,
-          estimated_value: submitForm.estimatedValue,
+          leadName: submitForm.leadName,
+          leadEmail: submitForm.leadEmail,
+          estimatedValue: Number(submitForm.estimatedValue) || 0,
+          partnerCompanyId: submitForm.partnerCompanyId,
         }),
       });
       const data = await res.json();
       if (data.success) {
-        showNotification('success', 'Lead submitted successfully!');
+        showNotification('success', 'Lead registered successfully!');
         setShowSubmitModal(false);
-        setSubmitForm({ leadName: '', leadEmail: '', estimatedValue: '0' });
+        setSubmitForm({ leadName: '', leadEmail: '', estimatedValue: '0', partnerCompanyId: '' });
         fetchReferrals();
       } else {
         showNotification('error', data.error || 'Failed to submit lead');
@@ -132,9 +144,12 @@ export default function ReferralsPage() {
 
   const getStatusBadge = (status: string) => {
     const map: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline'; icon: React.ElementType }> = {
-      APPROVED: { variant: 'default', icon: CheckCircle2 },
-      PENDING: { variant: 'secondary', icon: Clock },
-      REJECTED: { variant: 'destructive', icon: Ban },
+      REGISTERED: { variant: 'secondary', icon: Clock },
+      ACKNOWLEDGED: { variant: 'default', icon: CheckCircle2 },
+      INTRO_DONE: { variant: 'default', icon: CheckCircle2 },
+      NEGOTIATING: { variant: 'default', icon: Clock },
+      WON: { variant: 'default', icon: CheckCircle2 },
+      LOST: { variant: 'destructive', icon: Ban },
     };
     const { variant, icon: Icon } = map[status] || { variant: 'outline' as const, icon: Clock };
     return (
@@ -156,9 +171,12 @@ export default function ReferralsPage() {
 
   const stats = {
     total: referrals.length,
-    pending: referrals.filter((r) => r.status === 'PENDING').length,
-    approved: referrals.filter((r) => r.status === 'APPROVED').length,
-    rejected: referrals.filter((r) => r.status === 'REJECTED').length,
+    registered: referrals.filter((r) => r.status === 'REGISTERED').length,
+    inPipeline: referrals.filter((r) =>
+      ['ACKNOWLEDGED', 'INTRO_DONE', 'NEGOTIATING'].includes(r.status)
+    ).length,
+    won: referrals.filter((r) => r.status === 'WON').length,
+    lost: referrals.filter((r) => r.status === 'LOST').length,
   };
 
   const exportCSV = () => {
@@ -223,20 +241,20 @@ export default function ReferralsPage() {
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">Pending</p>
-            <p className="text-2xl font-bold text-amber-600">{stats.pending}</p>
+            <p className="text-sm text-muted-foreground">Registered</p>
+            <p className="text-2xl font-bold text-amber-600">{stats.registered}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">Approved</p>
-            <p className="text-2xl font-bold text-emerald-600">{stats.approved}</p>
+            <p className="text-sm text-muted-foreground">In Pipeline</p>
+            <p className="text-2xl font-bold text-emerald-600">{stats.inPipeline}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">Rejected</p>
-            <p className="text-2xl font-bold text-red-600">{stats.rejected}</p>
+            <p className="text-sm text-muted-foreground">Won / Lost</p>
+            <p className="text-2xl font-bold text-red-600">{stats.won} / {stats.lost}</p>
           </CardContent>
         </Card>
       </div>
@@ -259,9 +277,12 @@ export default function ReferralsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">All Status</SelectItem>
-            <SelectItem value="PENDING">Pending</SelectItem>
-            <SelectItem value="APPROVED">Approved</SelectItem>
-            <SelectItem value="REJECTED">Rejected</SelectItem>
+            <SelectItem value="REGISTERED">Registered</SelectItem>
+            <SelectItem value="ACKNOWLEDGED">Acknowledged</SelectItem>
+            <SelectItem value="INTRO_DONE">Intro Done</SelectItem>
+            <SelectItem value="NEGOTIATING">Negotiating</SelectItem>
+            <SelectItem value="WON">Won</SelectItem>
+            <SelectItem value="LOST">Lost</SelectItem>
           </SelectContent>
         </Select>
         <Button variant="outline" onClick={exportCSV} className="gap-1.5">
@@ -325,6 +346,26 @@ export default function ReferralsPage() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmitLead} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Partner Company *</Label>
+              <Select
+                value={submitForm.partnerCompanyId}
+                onValueChange={(v) => setSubmitForm({ ...submitForm, partnerCompanyId: v })}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select the company receiving this lead" />
+                </SelectTrigger>
+                <SelectContent>
+                  {companies.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                The lead is registered for this company with a timestamp — it cannot be deleted afterwards.
+              </p>
+            </div>
             <div className="space-y-2">
               <Label>Lead&apos;s Name *</Label>
               <Input

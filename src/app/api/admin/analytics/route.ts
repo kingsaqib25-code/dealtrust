@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { prisma } from '@/lib/prisma';
+import { STAGES_ACCEPTED } from '@/lib/partnership';
 
 
 export async function GET(request: NextRequest) {
@@ -33,7 +35,7 @@ export async function GET(request: NextRequest) {
         user: true,
         referrals: {
           where: {
-            status: 'APPROVED'
+            status: { in: STAGES_ACCEPTED }
           }
         },
         commissions: {
@@ -53,7 +55,7 @@ export async function GET(request: NextRequest) {
 
     const approvedReferrals = await prisma.referral.count({
       where: {
-        status: 'APPROVED',
+        status: { in: STAGES_ACCEPTED },
         createdAt: { gte: startDate }
       }
     });

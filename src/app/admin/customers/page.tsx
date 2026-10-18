@@ -65,9 +65,12 @@ interface Referral {
 }
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-  PENDING: { label: 'Pending', variant: 'secondary' },
-  APPROVED: { label: 'Approved', variant: 'default' },
-  REJECTED: { label: 'Rejected', variant: 'destructive' },
+  REGISTERED: { label: 'Registered', variant: 'secondary' },
+  ACKNOWLEDGED: { label: 'Acknowledged', variant: 'default' },
+  INTRO_DONE: { label: 'Intro Done', variant: 'default' },
+  NEGOTIATING: { label: 'Negotiating', variant: 'default' },
+  WON: { label: 'Won', variant: 'default' },
+  LOST: { label: 'Lost', variant: 'destructive' },
 };
 
 export default function CustomersPage() {
@@ -126,9 +129,12 @@ export default function CustomersPage() {
 
   const stats = {
     total: referrals.length,
-    pending: referrals.filter((r) => r.status === 'PENDING').length,
-    approved: referrals.filter((r) => r.status === 'APPROVED').length,
-    rejected: referrals.filter((r) => r.status === 'REJECTED').length,
+    registered: referrals.filter((r) => r.status === 'REGISTERED').length,
+    inPipeline: referrals.filter((r) =>
+      ['ACKNOWLEDGED', 'INTRO_DONE', 'NEGOTIATING'].includes(r.status)
+    ).length,
+    won: referrals.filter((r) => r.status === 'WON').length,
+    lost: referrals.filter((r) => r.status === 'LOST').length,
   };
 
   if (loading) {
@@ -165,29 +171,29 @@ export default function CustomersPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Pending</CardTitle>
+            <CardTitle className="text-sm font-medium">Registered</CardTitle>
             <Clock className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.pending}</div>
+            <div className="text-2xl font-bold">{stats.registered}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Approved</CardTitle>
+            <CardTitle className="text-sm font-medium">In Pipeline</CardTitle>
             <CheckCircle2 className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.approved}</div>
+            <div className="text-2xl font-bold">{stats.inPipeline}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Rejected</CardTitle>
+            <CardTitle className="text-sm font-medium">Won / Lost</CardTitle>
             <XCircle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.rejected}</div>
+            <div className="text-2xl font-bold">{stats.won} / {stats.lost}</div>
           </CardContent>
         </Card>
       </div>
@@ -216,9 +222,12 @@ export default function CustomersPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="PENDING">Pending</SelectItem>
-                  <SelectItem value="APPROVED">Approved</SelectItem>
-                  <SelectItem value="REJECTED">Rejected</SelectItem>
+                  <SelectItem value="REGISTERED">Registered</SelectItem>
+                  <SelectItem value="ACKNOWLEDGED">Acknowledged</SelectItem>
+                  <SelectItem value="INTRO_DONE">Intro Done</SelectItem>
+                  <SelectItem value="NEGOTIATING">Negotiating</SelectItem>
+                  <SelectItem value="WON">Won</SelectItem>
+                  <SelectItem value="LOST">Lost</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -313,7 +322,7 @@ export default function CustomersPage() {
                           <Eye className="mr-1 h-3.5 w-3.5" />
                           View
                         </Button>
-                        {referral.status === 'PENDING' && (
+                        {referral.status === 'REGISTERED' && (
                           <>
                             <Button
                               size="sm"
@@ -322,7 +331,7 @@ export default function CustomersPage() {
                               disabled={actionLoading === referral.id}
                             >
                               <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
-                              Approve
+                              Acknowledge
                             </Button>
                             <Button
                               size="sm"
@@ -331,7 +340,7 @@ export default function CustomersPage() {
                               disabled={actionLoading === referral.id}
                             >
                               <XCircle className="mr-1 h-3.5 w-3.5" />
-                              Reject
+                              Decline
                             </Button>
                           </>
                         )}

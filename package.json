@@ -1,12 +1,12 @@
 {
-  "name": "refferq",
+  "name": "dealtrust",
   "version": "1.1.0",
   "description": "Open-source affiliate marketing platform with comprehensive tracking, commission management, and payout automation. Built with Next.js, TypeScript, and PostgreSQL.",
-  "author": "Refferq Team <hello@refferq.com>",
+  "author": "DealTrust Team <hello@dealtrust.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/refferq/refferq.git"
+    "url": "https://github.com/dealtrust/dealtrust.git"
   },
   "keywords": [
     "affiliate",
@@ -20,9 +20,9 @@
     "postgresql",
     "prisma"
   ],
-  "homepage": "https://github.com/refferq/refferq#readme",
+  "homepage": "https://github.com/dealtrust/dealtrust#readme",
   "bugs": {
-    "url": "https://github.com/refferq/refferq/issues"
+    "url": "https://github.com/dealtrust/dealtrust/issues"
   },
   "scripts": {
     "dev": "next dev",
@@ -32,6 +32,7 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
+    "test": "vitest run",
     "test:email": "node scripts/test-email.js"
   },
   "dependencies": {
@@ -102,6 +103,7 @@
     "postcss": "^8",
     "tailwindcss": "^3.3.0",
     "tsx": "^4.20.6",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.7"
   }
 }
