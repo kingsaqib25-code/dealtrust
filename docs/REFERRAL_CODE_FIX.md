@@ -80,7 +80,7 @@ Added conditional rendering:
 
 ### Referral Link Structure
 ```
-https://dealtrust.vercel.app/r/JOHN-A4B2
+https://dealtrust-portal.vercel.app/r/JOHN-A4B2
 ```
 
 Where:
@@ -176,10 +176,10 @@ WHERE u.role = 'AFFILIATE'
 ### Deployment Status
 ✅ **PUSHED TO GITHUB**: Commit `1356f8a`  
 ⏳ **VERCEL AUTO-DEPLOY**: In progress  
-🌐 **LIVE URL**: https://dealtrust.vercel.app/
+🌐 **LIVE URL**: https://dealtrust-portal.vercel.app/
 
 ### Verify Deployment
-1. Visit: https://dealtrust.vercel.app/affiliate
+1. Visit: https://dealtrust-portal.vercel.app/affiliate
 2. Login as affiliate user
 3. Check if referral link appears
 4. Test "Generate Code" button if needed

@@ -6,7 +6,7 @@
 The previous commit (5ef3fec) **only contained documentation files** and **NO actual code changes**. This was caused by a git rebase that lost all the code modifications, leaving only the REFERRAL_CODE_FIX.md file.
 
 ### Impact
-All bug fixes discussed in the conversation were NOT deployed to the live site (https://dealtrust.vercel.app/), causing:
+All bug fixes discussed in the conversation were NOT deployed to the live site (https://dealtrust-portal.vercel.app/), causing:
 - ❌ Affiliates still registering with ACTIVE status (should be PENDING)
 - ❌ Generic "Access Denied" messages (should show specific status messages)
 - ❌ Profile updates not working
@@ -212,12 +212,12 @@ return NextResponse.json({
 ✅ **BRANCH**: main (up to date)
 
 ### Vercel (Auto-Deploy)
-⏳ **DEPLOYING**: https://dealtrust.vercel.app/  
+⏳ **DEPLOYING**: https://dealtrust-portal.vercel.app/  
 ⏳ **ETA**: 1-2 minutes after push  
 🔄 **STATUS**: Check https://vercel.com/dealtrust/dealtrust/deployments
 
 ### Verification Steps
-1. Visit https://dealtrust.vercel.app/register
+1. Visit https://dealtrust-portal.vercel.app/register
 2. Register new affiliate
 3. Try to login → Should see "pending approval" message
 4. Admin can approve user in database
@@ -351,7 +351,7 @@ WHERE u.role = 'AFFILIATE';
 Previous issues were caused by an empty commit that only contained documentation. This has been corrected with two new commits containing all the actual code changes.
 
 **Status**: ✅ DEPLOYED AND LIVE  
-**URL**: https://dealtrust.vercel.app/  
+**URL**: https://dealtrust-portal.vercel.app/  
 **Last Updated**: October 11, 2025  
 **Commits**: 2e444df, 9466163
 

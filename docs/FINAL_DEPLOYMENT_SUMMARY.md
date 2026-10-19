@@ -1,6 +1,6 @@
 # 🎉 ALL FIXES DEPLOYED - Final Summary
 **Date**: October 11, 2025  
-**Live URL**: https://dealtrust.vercel.app/  
+**Live URL**: https://dealtrust-portal.vercel.app/  
 **Status**: ✅ ALL ISSUES RESOLVED
 
 ---
@@ -18,7 +18,7 @@
 - Clear, specific error messages for each account status
 
 **Test**:
-1. Register affiliate at https://dealtrust.vercel.app/register
+1. Register affiliate at https://dealtrust-portal.vercel.app/register
 2. Try to login → Should see "pending approval" message
 3. Admin approves user in database
 4. User can now login successfully
@@ -84,7 +84,7 @@ fetch('/api/admin/profile', {
 - Shows "Generate Referral Code" button if code missing
 - One-click code generation
 - Auto-refresh after generation
-- Referral link format: `https://dealtrust.vercel.app/r/NAME-XXXX`
+- Referral link format: `https://dealtrust-portal.vercel.app/r/NAME-XXXX`
 
 **Test**:
 1. Login as affiliate
@@ -126,7 +126,7 @@ Created complete tracking integration system:
 ```html
 <!-- Add to your website's <head> or before </body> -->
 <script 
-  src="https://dealtrust.vercel.app/scripts/dealtrust-tracker.js"
+  src="https://dealtrust-portal.vercel.app/scripts/dealtrust-tracker.js"
   data-api-key="pk_abc123..."
 ></script>
 ```
@@ -242,7 +242,7 @@ DealTrust.trackConversion({
 ✅ **Files Pushed**: 11 files (4 modified, 7 created)
 
 ### Vercel Status
-⏳ **Deploying**: https://dealtrust.vercel.app/  
+⏳ **Deploying**: https://dealtrust-portal.vercel.app/  
 ⏳ **ETA**: 1-2 minutes  
 🔄 **Monitor**: https://vercel.com/dealtrust/dealtrust/deployments
 
@@ -260,7 +260,7 @@ DealTrust.trackConversion({
 
 **1. Generate API Keys**:
 ```bash
-curl -X POST https://dealtrust.vercel.app/api/admin/integration/generate-key \
+curl -X POST https://dealtrust-portal.vercel.app/api/admin/integration/generate-key \
   -H "Cookie: auth-token=YOUR_TOKEN"
 ```
 
@@ -277,13 +277,13 @@ curl -X POST https://dealtrust.vercel.app/api/admin/integration/generate-key \
 
 **2. Get Integration Settings**:
 ```bash
-curl https://dealtrust.vercel.app/api/admin/integration \
+curl https://dealtrust-portal.vercel.app/api/admin/integration \
   -H "Cookie: auth-token=YOUR_TOKEN"
 ```
 
 **3. Update Settings**:
 ```bash
-curl -X PUT https://dealtrust.vercel.app/api/admin/integration \
+curl -X PUT https://dealtrust-portal.vercel.app/api/admin/integration \
   -H "Content-Type: application/json" \
   -H "Cookie: auth-token=YOUR_TOKEN" \
   -d '{
@@ -303,7 +303,7 @@ curl -X PUT https://dealtrust.vercel.app/api/admin/integration \
   
   <!-- Add DealTrust Tracking -->
   <script 
-    src="https://dealtrust.vercel.app/scripts/dealtrust-tracker.js"
+    src="https://dealtrust-portal.vercel.app/scripts/dealtrust-tracker.js"
     data-api-key="pk_YOUR_PUBLIC_KEY"
   ></script>
 </head>
@@ -559,7 +559,7 @@ LIMIT 10;
 ✅ Production ready  
 
 ### Live Status:
-🌐 **URL**: https://dealtrust.vercel.app/  
+🌐 **URL**: https://dealtrust-portal.vercel.app/  
 ✅ **GitHub**: https://github.com/DealTrust/DealTrust  
 ⏳ **Vercel**: Deploying (1-2 minutes)  
 🎯 **Status**: FULLY OPERATIONAL  
