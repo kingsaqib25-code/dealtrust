@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -149,8 +150,8 @@ export default function RegisterPage() {
       <div className="w-full max-w-md space-y-6">
         {/* Logo */}
         <div className="text-center space-y-2">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/25">
-            <Target className="h-7 w-7 text-primary-foreground" />
+          <div className="mx-auto flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl shadow-lg">
+            <Image src="/images/dealtrust-logo.png" alt="DealTrust" width={64} height={64} className="h-16 w-16 object-cover" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight">DealTrust</h1>
           <p className="text-sm text-muted-foreground">
